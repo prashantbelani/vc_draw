@@ -444,10 +444,10 @@
         <button type="button" id="mainDrawBtn" class="btn-success">🎲 Draw Winner Now</button>
       </div>
 
-      <!-- All Names Drawn Banner -->
+      <!-- All Names Drawn Banner (Button Hidden) -->
       <div id="cycleCompleteBanner" class="banner banner-warning" hidden>
         <span><strong>All names drawn!</strong> Automatic draws are paused until a new cycle starts.</span>
-        <button type="button" id="newCycleBtn" class="btn-primary">Start new cycle</button>
+        <button type="button" id="newCycleBtn" class="btn-primary hidden-control">Start new cycle</button>
       </div>
     </section>
 
@@ -485,7 +485,7 @@
 
   <script>
     (() => {
-      const STORAGE_KEY = 'monthly_name_draw_github_v8';
+      const STORAGE_KEY = 'monthly_name_draw_github_v9';
 
       // Master list of 22 names
       const INITIAL_NAMES = [
