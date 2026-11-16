@@ -1,0 +1,1045 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Monthly Name Draw</title>
+  <style>
+    :root {
+      --bg: #f8fafc;
+      --surface: #ffffff;
+      --surface-alt: #f1f5f9;
+      --text: #0f172a;
+      --text-muted: #475569;
+      --border: #cbd5e1;
+      --primary: #2563eb;
+      --primary-hover: #1d4ed8;
+      --primary-text: #ffffff;
+      --danger: #dc2626;
+      --success-bg: #dcfce7;
+      --success-text: #166534;
+      --warning-bg: #fef3c7;
+      --warning-text: #92400e;
+      --badge-bg: #e2e8f0;
+      --badge-text: #334155;
+      --shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
+      --radius: 12px;
+    }
+
+    @media (prefers-color-scheme: dark) {
+      :root {
+        --bg: #0f172a;
+        --surface: #1e293b;
+        --surface-alt: #334155;
+        --text: #f8fafc;
+        --text-muted: #94a3b8;
+        --border: #475569;
+        --primary: #3b82f6;
+        --primary-hover: #60a5fa;
+        --primary-text: #0f172a;
+        --danger: #ef4444;
+        --success-bg: #064e3b;
+        --success-text: #a7f3d0;
+        --warning-bg: #78350f;
+        --warning-text: #fde68a;
+        --badge-bg: #334155;
+        --badge-text: #cbd5e1;
+        --shadow: 0 4px 6px -1px rgb(0 0 0 / 0.4);
+      }
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+      background-color: var(--bg);
+      color: var(--text);
+      line-height: 1.5;
+      padding: 1.5rem 1rem;
+      position: relative;
+      overflow-x: hidden;
+    }
+
+    /* Confetti Canvas Overlay */
+    #confettiCanvas {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100vw;
+      height: 100vh;
+      pointer-events: none;
+      z-index: 999;
+    }
+
+    .container {
+      max-width: 760px;
+      margin: 0 auto;
+      display: flex;
+      flex-direction: column;
+      gap: 1.5rem;
+    }
+
+    header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 0.75rem;
+    }
+
+    h1 {
+      font-size: 1.5rem;
+      font-weight: 700;
+    }
+
+    h2 {
+      font-size: 1.125rem;
+      font-weight: 600;
+      margin-bottom: 1rem;
+    }
+
+    .card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 1.5rem;
+      box-shadow: var(--shadow);
+    }
+
+    /* Winner Hero Card & Casino Slot Window */
+    .winner-card {
+      text-align: center;
+      background: linear-gradient(145deg, var(--surface), var(--surface-alt));
+      position: relative;
+      overflow: hidden;
+    }
+
+    .winner-label {
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      font-size: 0.8rem;
+      font-weight: 700;
+      color: var(--text-muted);
+    }
+
+    .slot-window {
+      position: relative;
+      height: 4.5rem;
+      margin: 0.75rem 0;
+      overflow: hidden;
+      border-radius: 10px;
+      background: var(--surface-alt);
+      border: 2px solid var(--border);
+      box-shadow: inset 0 2px 4px rgba(0,0,0,0.06);
+      transition: border-color 0.3s, box-shadow 0.3s;
+    }
+
+    .slot-window.rolling {
+      border-color: #3b82f6;
+      box-shadow: 0 0 25px rgba(59, 130, 246, 0.35), inset 0 2px 4px rgba(0,0,0,0.06);
+      animation: slotPulse 0.8s infinite alternate;
+    }
+
+    @keyframes slotPulse {
+      0% { border-color: #2563eb; }
+      100% { border-color: #9333ea; }
+    }
+
+    .slot-reel {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      will-change: transform;
+    }
+
+    .slot-item {
+      height: 4.5rem;
+      width: 100%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: clamp(1.75rem, 4.5vw, 2.5rem);
+      font-weight: 800;
+      color: var(--primary);
+    }
+
+    .slot-item.winner-highlight {
+      color: #10b981;
+      text-shadow: 0 0 20px rgba(16, 185, 129, 0.4);
+      animation: winnerGlow 1.5s ease-in-out infinite alternate;
+    }
+
+    @keyframes winnerGlow {
+      0% { transform: scale(1); }
+      100% { transform: scale(1.03); }
+    }
+
+    .winner-meta {
+      font-size: 0.9rem;
+      color: var(--text-muted);
+      margin-bottom: 1rem;
+      font-weight: 500;
+      min-height: 1.5rem;
+    }
+
+    .countdown-pill {
+      display: inline-block;
+      background: var(--surface-alt);
+      border: 1px solid var(--border);
+      padding: 0.4rem 0.9rem;
+      border-radius: 999px;
+      font-size: 0.875rem;
+      font-weight: 500;
+      margin-bottom: 1rem;
+    }
+
+    /* Action Buttons */
+    .action-row {
+      display: flex;
+      justify-content: center;
+      gap: 0.75rem;
+      margin-top: 0.5rem;
+    }
+
+    button {
+      cursor: pointer;
+      font: inherit;
+      font-size: 0.875rem;
+      font-weight: 600;
+      padding: 0.6rem 1.25rem;
+      border-radius: 8px;
+      border: 1px solid transparent;
+      transition: background-color 0.15s, transform 0.1s, opacity 0.15s;
+    }
+
+    button:hover:not(:disabled) {
+      transform: translateY(-1px);
+    }
+
+    button:active:not(:disabled) {
+      transform: translateY(0);
+    }
+
+    button:focus-visible {
+      outline: 2px solid var(--primary);
+      outline-offset: 2px;
+    }
+
+    .btn-primary {
+      background: var(--primary);
+      color: var(--primary-text);
+    }
+
+    .btn-primary:hover:not(:disabled) {
+      background: var(--primary-hover);
+    }
+
+    .btn-success {
+      background: #10b981;
+      color: #ffffff;
+      font-size: 1rem;
+      padding: 0.7rem 1.5rem;
+      box-shadow: 0 4px 12px rgba(16, 185, 129, 0.3);
+    }
+
+    .btn-success:hover:not(:disabled) {
+      background: #059669;
+    }
+
+    .btn-secondary {
+      background: var(--surface-alt);
+      color: var(--text);
+      border-color: var(--border);
+    }
+
+    .btn-secondary:hover:not(:disabled) {
+      opacity: 0.85;
+    }
+
+    button:disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
+    }
+
+    /* Banners */
+    .banner {
+      padding: 0.875rem 1rem;
+      border-radius: 8px;
+      margin-top: 1rem;
+      font-size: 0.925rem;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 0.75rem;
+      text-align: left;
+    }
+
+    .banner-warning {
+      background: var(--warning-bg);
+      color: var(--warning-text);
+    }
+
+    /* Participants List */
+    .name-list {
+      list-style: none;
+      display: flex;
+      flex-direction: column;
+      gap: 0.5rem;
+    }
+
+    .name-item {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 0.65rem 0.85rem;
+      background: var(--bg);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      gap: 0.75rem;
+    }
+
+    .name-item.drawn .person-name {
+      text-decoration: line-through;
+      color: var(--text-muted);
+    }
+
+    .name-info {
+      display: flex;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 0.5rem;
+    }
+
+    .person-name {
+      font-weight: 500;
+    }
+
+    .badge {
+      font-size: 0.75rem;
+      font-weight: 600;
+      padding: 0.15rem 0.55rem;
+      border-radius: 999px;
+      background: var(--badge-bg);
+      color: var(--badge-text);
+    }
+
+    .badge-eligible {
+      background: var(--success-bg);
+      color: var(--success-text);
+    }
+
+    /* History Table */
+    .table-wrapper {
+      overflow-x: auto;
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 0.9rem;
+      text-align: left;
+    }
+
+    th, td {
+      padding: 0.65rem 0.75rem;
+      border-bottom: 1px solid var(--border);
+    }
+
+    th {
+      color: var(--text-muted);
+      font-weight: 600;
+      font-size: 0.8rem;
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+    }
+
+    tr:last-child td {
+      border-bottom: none;
+    }
+
+    /* Admin Panel */
+    .admin-panel {
+      margin-top: 0.75rem;
+      padding: 0.85rem;
+      background: var(--surface-alt);
+      border: 1px dashed var(--border);
+      border-radius: 8px;
+      display: none;
+      align-items: center;
+      justify-content: space-between;
+      flex-wrap: wrap;
+      gap: 0.75rem;
+    }
+
+    .admin-panel.open {
+      display: flex;
+    }
+
+    .toolbar {
+      display: flex;
+      gap: 0.5rem;
+      flex-wrap: wrap;
+      align-items: center;
+    }
+
+    .empty-state {
+      text-align: center;
+      padding: 1.5rem 1rem;
+      color: var(--text-muted);
+      font-size: 0.95rem;
+    }
+
+    .hidden-control {
+      display: none !important;
+    }
+  </style>
+</head>
+<body>
+  <canvas id="confettiCanvas"></canvas>
+
+  <main class="container">
+    <header>
+      <h1>Monthly Name Draw</h1>
+      <div class="toolbar">
+        <button type="button" id="exportBtn" class="btn-secondary hidden-control">Export JSON</button>
+        <button type="button" id="importBtn" class="btn-secondary hidden-control">Import JSON</button>
+        <input type="file" id="importFile" accept=".json,application/json" class="hidden-control" aria-label="Import JSON file">
+        <button type="button" id="adminToggleBtn" class="btn-secondary" aria-expanded="false" aria-controls="adminPanel">Admin</button>
+      </div>
+    </header>
+
+    <!-- Admin Controls -->
+    <section id="adminPanel" class="admin-panel" aria-label="Admin testing controls">
+      <div>
+        <strong>Admin Testing</strong>
+        <div style="font-size: 0.8rem; color: var(--text-muted);">Simulates a draw immediately without waiting for the 10th.</div>
+      </div>
+      <button type="button" id="adminDrawNowBtn" class="btn-primary">Draw now (test)</button>
+    </section>
+
+    <!-- Top Section: Winner, Countdown & Draw Button -->
+    <section class="card winner-card" aria-labelledby="winnerHeading">
+      <div id="winnerHeading" class="winner-label">This Month's Winner</div>
+      
+      <!-- Casino Slot Machine Window -->
+      <div class="slot-window" id="slotWindow">
+        <div class="slot-reel" id="slotReel">
+          <div class="slot-item">—</div>
+        </div>
+      </div>
+
+      <div id="winnerMeta" class="winner-meta">Waiting for the 10th of the month</div>
+      <div id="countdownDisplay" class="countdown-pill" aria-live="off">Calculating next draw...</div>
+
+      <div class="action-row">
+        <button type="button" id="mainDrawBtn" class="btn-success">🎲 Draw Winner Now</button>
+      </div>
+
+      <!-- All Names Drawn Banner -->
+      <div id="cycleCompleteBanner" class="banner banner-warning" hidden>
+        <span><strong>All names drawn!</strong> Automatic draws are paused until a new cycle starts.</span>
+        <button type="button" id="newCycleBtn" class="btn-primary">Start new cycle</button>
+      </div>
+    </section>
+
+    <!-- Participants List -->
+    <section class="card" aria-labelledby="participantsHeading">
+      <div style="display: flex; justify-content: space-between; align-items: baseline; margin-bottom: 1rem;">
+        <h2 id="participantsHeading" style="margin-bottom: 0;">Participants</h2>
+        <span id="poolCount" style="font-size: 0.85rem; color: var(--text-muted);">0 eligible</span>
+      </div>
+
+      <ul id="nameList" class="name-list"></ul>
+      <div id="emptyListMsg" class="empty-state" hidden>
+        No names in the pool yet.
+      </div>
+    </section>
+
+    <!-- Draw History -->
+    <section class="card" aria-labelledby="historyHeading">
+      <h2 id="historyHeading">Draw History</h2>
+      <div id="historyEmpty" class="empty-state">No draws recorded yet.</div>
+      <div id="historyWrapper" class="table-wrapper" hidden>
+        <table>
+          <thead>
+            <tr>
+              <th scope="col">Month</th>
+              <th scope="col">Winner</th>
+              <th scope="col">Drawn On</th>
+            </tr>
+          </thead>
+          <tbody id="historyBody"></tbody>
+        </table>
+      </div>
+    </section>
+  </main>
+
+  <script>
+    (() => {
+      const STORAGE_KEY = 'monthly_name_draw_github_v8';
+
+      // Master list of 22 names
+      const INITIAL_NAMES = [
+        "Rekhaben", "Mayur belani", "Priti belani", "Chandresh belani", 
+        "Shital belani", "Mahesh belani", "Shiddhi belani", "Preet belani", 
+        "Manish belani", "Nikhil Kumar", "Hiral dasadiya", "Nirav belani", 
+        "Harehjeet", "Sushant", "Mitul belani", "Rakesh ranpura", 
+        "Kartik belani", "Keyur belani", "Prashant belani", "Vasant Belani", 
+        "Amitaben Belani", "Swati Belani"
+      ];
+
+      // Application State
+      let state = {
+        participants: [],
+        history: []
+      };
+
+      let isAnimating = false;
+
+      // DOM References
+      const els = {
+        slotWindow: document.getElementById('slotWindow'),
+        slotReel: document.getElementById('slotReel'),
+        winnerMeta: document.getElementById('winnerMeta'),
+        countdownDisplay: document.getElementById('countdownDisplay'),
+        mainDrawBtn: document.getElementById('mainDrawBtn'),
+        cycleCompleteBanner: document.getElementById('cycleCompleteBanner'),
+        newCycleBtn: document.getElementById('newCycleBtn'),
+        nameList: document.getElementById('nameList'),
+        emptyListMsg: document.getElementById('emptyListMsg'),
+        poolCount: document.getElementById('poolCount'),
+        historyEmpty: document.getElementById('historyEmpty'),
+        historyWrapper: document.getElementById('historyWrapper'),
+        historyBody: document.getElementById('historyBody'),
+        adminToggleBtn: document.getElementById('adminToggleBtn'),
+        adminPanel: document.getElementById('adminPanel'),
+        adminDrawNowBtn: document.getElementById('adminDrawNowBtn')
+      };
+
+      // --- Confetti Surprise Effect ---
+      const canvas = document.getElementById('confettiCanvas');
+      const ctx = canvas.getContext('2d');
+      let particles = [];
+
+      function resizeCanvas() {
+        canvas.width = window.innerWidth;
+        canvas.height = window.innerHeight;
+      }
+      window.addEventListener('resize', resizeCanvas);
+      resizeCanvas();
+
+      function triggerConfetti() {
+        particles = [];
+        const colors = ['#2563eb', '#10b981', '#f59e0b', '#ec4899', '#8b5cf6', '#3b82f6'];
+        for (let i = 0; i < 150; i++) {
+          particles.push({
+            x: window.innerWidth / 2,
+            y: window.innerHeight / 2 - 50,
+            vx: (Math.random() - 0.5) * 18,
+            vy: (Math.random() - 0.7) * 18 - 5,
+            size: Math.random() * 9 + 4,
+            color: colors[Math.floor(Math.random() * colors.length)],
+            rotation: Math.random() * 360,
+            rotSpeed: (Math.random() - 0.5) * 18,
+            opacity: 1,
+            decay: Math.random() * 0.012 + 0.006
+          });
+        }
+        animateConfetti();
+      }
+
+      function animateConfetti() {
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+        if (particles.length === 0) return;
+
+        particles.forEach(p => {
+          p.x += p.vx;
+          p.y += p.vy;
+          p.vy += 0.35; // gravity
+          p.rotation += p.rotSpeed;
+          p.opacity -= p.decay;
+
+          if (p.opacity > 0) {
+            ctx.save();
+            ctx.translate(p.x, p.y);
+            ctx.rotate((p.rotation * Math.PI) / 180);
+            ctx.globalAlpha = p.opacity;
+            ctx.fillStyle = p.color;
+            ctx.fillRect(-p.size / 2, -p.size / 2, p.size, p.size * 0.6);
+            ctx.restore();
+          }
+        });
+
+        particles = particles.filter(p => p.opacity > 0);
+        if (particles.length > 0) {
+          requestAnimationFrame(animateConfetti);
+        }
+      }
+
+      // --- Date Helpers (Local Time) ---
+
+      function getMonthKey(date = new Date()) {
+        const y = date.getFullYear();
+        const m = String(date.getMonth() + 1).padStart(2, '0');
+        return `${y}-${m}`;
+      }
+
+      function formatMonthKey(monthKey) {
+        const [y, m] = monthKey.split('-').map(Number);
+        const d = new Date(y, m - 1, 1);
+        return d.toLocaleDateString(undefined, { month: 'long', year: 'numeric' });
+      }
+
+      function getNextDrawDate(now = new Date()) {
+        const year = now.getFullYear();
+        const month = now.getMonth();
+        const currentMonthKey = getMonthKey(now);
+        const alreadyDrawnThisMonth = state.history.some(h => h.monthKey === currentMonthKey);
+
+        if (now.getDate() < 10 || (now.getDate() === 10 && !alreadyDrawnThisMonth)) {
+          return new Date(year, month, 10, 0, 0, 0, 0);
+        }
+        return new Date(year, month + 1, 10, 0, 0, 0, 0);
+      }
+
+      // --- Persistence & Synchronization ---
+
+      function loadState() {
+        let saved = null;
+        try {
+          const raw = localStorage.getItem(STORAGE_KEY);
+          if (raw) saved = JSON.parse(raw);
+        } catch (err) {
+          console.warn('Could not read from localStorage:', err);
+        }
+
+        const participantsMap = new Map();
+
+        if (saved && Array.isArray(saved.participants)) {
+          saved.participants.forEach(p => {
+            if (p && typeof p.name === 'string') {
+              participantsMap.set(p.name.trim().toLowerCase(), {
+                id: p.id || (crypto.randomUUID ? crypto.randomUUID() : String(Date.now() + Math.random())),
+                name: p.name.trim(),
+                drawnMonthKey: p.drawnMonthKey || null
+              });
+            }
+          });
+        }
+
+        INITIAL_NAMES.forEach(name => {
+          const key = name.trim().toLowerCase();
+          if (!participantsMap.has(key)) {
+            participantsMap.set(key, {
+              id: crypto.randomUUID ? crypto.randomUUID() : String(Date.now() + Math.random()),
+              name: name.trim(),
+              drawnMonthKey: null
+            });
+          }
+        });
+
+        state.participants = Array.from(participantsMap.values());
+
+        // Ensure Kartik Belani is marked as drawn for November 2026
+        state.participants.forEach(p => {
+          if (p.name.toLowerCase() === 'kartik belani') {
+            p.drawnMonthKey = '2026-11';
+          }
+        });
+
+        if (saved && Array.isArray(saved.history)) {
+          state.history = saved.history.filter(h => h && typeof h.name === 'string' && typeof h.monthKey === 'string');
+        } else {
+          state.history = [];
+        }
+
+        const hasKartikHistory = state.history.some(h => h.name.toLowerCase() === 'kartik belani' && h.monthKey === '2026-11');
+        if (!hasKartikHistory) {
+          state.history.push({
+            name: 'Kartik belani',
+            monthKey: '2026-11',
+            drawnAt: '2026-11-10T00:00:00.000Z'
+          });
+        }
+
+        saveState();
+      }
+
+      function saveState() {
+        try {
+          localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+        } catch (err) {
+          console.warn('Could not save to localStorage:', err);
+        }
+      }
+
+      // --- Core Draw Logic ---
+
+      function secureRandomIndex(max) {
+        if (max <= 1) return 0;
+        const limit = Math.floor(0x100000000 / max) * max;
+        const buf = new Uint32Array(1);
+        let rand;
+        do {
+          crypto.getRandomValues(buf);
+          rand = buf[0];
+        } while (rand >= limit);
+        return rand % max;
+      }
+
+      function getEligibleParticipants() {
+        return state.participants.filter(p => !p.drawnMonthKey);
+      }
+
+      function isCycleComplete() {
+        return state.participants.length > 0 && getEligibleParticipants().length === 0;
+      }
+
+      function checkAndRunScheduledDraw() {
+        const now = new Date();
+        const currentMonthKey = getMonthKey(now);
+
+        if (now.getDate() < 10) return false;
+
+        const alreadyDrawn = state.history.some(entry => entry.monthKey === currentMonthKey);
+        if (alreadyDrawn) return false;
+
+        const eligible = getEligibleParticipants();
+        if (eligible.length === 0) return false;
+
+        executeDraw(currentMonthKey, eligible, true);
+        return true;
+      }
+
+      function executeDraw(monthKey, eligiblePool, animate = true) {
+        const winnerIndex = secureRandomIndex(eligiblePool.length);
+        const chosen = eligiblePool[winnerIndex];
+        const drawnAt = new Date().toISOString();
+
+        const participant = state.participants.find(p => p.id === chosen.id);
+        if (participant) {
+          participant.drawnMonthKey = monthKey;
+        }
+
+        const existingIdx = state.history.findIndex(h => h.monthKey === monthKey);
+        const record = { name: chosen.name, monthKey, drawnAt };
+        if (existingIdx >= 0) {
+          state.history[existingIdx] = record;
+        } else {
+          state.history.push(record);
+        }
+
+        saveState();
+        renderAll(animate ? { animateWinner: chosen.name, pool: eligiblePool } : null);
+      }
+
+      function handleManualDraw() {
+        if (isAnimating) return;
+        const now = new Date();
+        const currentMonthKey = getMonthKey(now);
+
+        // If this month already has a winner, spin the slot machine with the existing winner!
+        const existingDraw = state.history.find(h => h.monthKey === currentMonthKey);
+        if (existingDraw) {
+          renderAll({ animateWinner: existingDraw.name, pool: state.participants });
+          return;
+        }
+
+        const eligible = getEligibleParticipants();
+        if (state.participants.length === 0) {
+          alert('No participants available for a draw.');
+          return;
+        }
+        if (eligible.length === 0) {
+          alert('All names have already been drawn! Start a new cycle.');
+          return;
+        }
+
+        executeDraw(currentMonthKey, eligible, true);
+      }
+
+      // --- Multi-Stage Suspenseful Slot Rolling with Interim Stops (~5.5s) ---
+
+      function playSlotAnimation(finalName, pool, metaText) {
+        isAnimating = true;
+        els.mainDrawBtn.disabled = true;
+        els.slotWindow.classList.add('rolling');
+
+        const poolNames = pool.length > 0 ? pool.map(p => p.name) : INITIAL_NAMES;
+        const otherNames = poolNames.filter(n => n.toLowerCase() !== finalName.toLowerCase());
+        const tease1 = otherNames[Math.floor(Math.random() * otherNames.length)] || finalName;
+        const tease2 = otherNames[Math.floor(Math.random() * otherNames.length)] || finalName;
+
+        // Construct Reel with 2 interim tease stops before the final winner
+        const reelNames = [];
+        for (let i = 0; i < 28; i++) {
+          reelNames.push(poolNames[Math.floor(Math.random() * poolNames.length)]);
+        }
+        const idx1 = reelNames.length;
+        reelNames.push(tease1);
+
+        for (let i = 0; i < 4; i++) {
+          reelNames.push(poolNames[Math.floor(Math.random() * poolNames.length)]);
+        }
+        const idx2 = reelNames.length;
+        reelNames.push(tease2);
+
+        for (let i = 0; i < 3; i++) {
+          reelNames.push(poolNames[Math.floor(Math.random() * poolNames.length)]);
+        }
+        const finalIdx = reelNames.length;
+        reelNames.push(finalName);
+
+        // Populate DOM
+        els.slotReel.innerHTML = '';
+        reelNames.forEach((name, idx) => {
+          const div = document.createElement('div');
+          div.className = `slot-item${idx === finalIdx ? ' winner-highlight' : ''}`;
+          div.textContent = name;
+          els.slotReel.appendChild(div);
+        });
+
+        const itemHeight = 72;
+        const y1 = idx1 * itemHeight;
+        const y2 = idx2 * itemHeight;
+        const yFinal = finalIdx * itemHeight;
+
+        els.slotReel.style.transition = 'none';
+        els.slotReel.style.transform = 'translateY(0)';
+        void els.slotReel.offsetHeight;
+
+        // Stage 1: Fast initial roll
+        els.winnerMeta.textContent = '🎲 Scanning eligible pool...';
+        els.slotReel.style.transition = 'transform 2.2s cubic-bezier(0.15, 0.8, 0.3, 1)';
+        els.slotReel.style.transform = `translateY(-${y1}px)`;
+
+        setTimeout(() => {
+          // Pause 1: Tease Stop 1
+          els.winnerMeta.textContent = `✨ Paused briefly on ${tease1}...`;
+
+          setTimeout(() => {
+            // Stage 2: Medium roll to second tease stop
+            els.winnerMeta.textContent = '🔍 Narrowing down contenders...';
+            els.slotReel.style.transition = 'transform 1.4s cubic-bezier(0.15, 0.85, 0.35, 1)';
+            els.slotReel.style.transform = `translateY(-${y2}px)`;
+
+            setTimeout(() => {
+              // Pause 2: Tease Stop 2
+              els.winnerMeta.textContent = `⚡ Close call on ${tease2}! Finalizing...`;
+
+              setTimeout(() => {
+                // Stage 3: Final slow suspenseful roll to the winner
+                els.winnerMeta.textContent = '🎯 Drumroll building up...';
+                els.slotReel.style.transition = 'transform 1.8s cubic-bezier(0.04, 0.9, 0.08, 1)';
+                els.slotReel.style.transform = `translateY(-${yFinal}px)`;
+
+                setTimeout(() => {
+                  els.slotWindow.classList.remove('rolling');
+                  els.winnerMeta.textContent = metaText;
+                  triggerConfetti(); // 🎊 Grand confetti celebration!
+                  isAnimating = false;
+                  els.mainDrawBtn.disabled = false;
+                }, 1900);
+
+              }, 700); // Pause 2 duration
+
+            }, 1500); // Stage 2 duration + buffer
+
+          }, 600); // Pause 1 duration
+
+        }, 2300); // Stage 1 duration + buffer
+      }
+
+      // --- UI Rendering ---
+
+      function renderWinnerSection(animationConfig = null) {
+        const currentMonthKey = getMonthKey();
+        const currentDraw = state.history.find(h => h.monthKey === currentMonthKey);
+        const latestDraw = [...state.history].sort((a, b) => b.monthKey.localeCompare(a.monthKey))[0];
+        const displayDraw = currentDraw || latestDraw;
+
+        els.cycleCompleteBanner.hidden = !isCycleComplete();
+
+        if (state.participants.length === 0 && !displayDraw) {
+          els.slotReel.innerHTML = '<div class="slot-item">No participants</div>';
+          els.winnerMeta.textContent = 'Waiting for the 10th of the month';
+          return;
+        }
+
+        if (animationConfig) {
+          const drawObj = state.history.find(h => h.name.toLowerCase() === animationConfig.animateWinner.toLowerCase() && h.monthKey === currentMonthKey) || displayDraw;
+          const meta = drawObj ? `Winner for ${formatMonthKey(drawObj.monthKey)}` : '';
+          playSlotAnimation(animationConfig.animateWinner, animationConfig.pool, meta);
+          return;
+        }
+
+        // Static render without animation
+        if (displayDraw) {
+          els.slotReel.innerHTML = `<div class="slot-item winner-highlight">${displayDraw.name}</div>`;
+          els.slotReel.style.transform = 'translateY(0)';
+          els.winnerMeta.textContent = currentDraw
+            ? `Winner for ${formatMonthKey(currentDraw.monthKey)}`
+            : `Last winner (${formatMonthKey(displayDraw.monthKey)}) — awaiting this month's draw`;
+        } else {
+          els.slotReel.innerHTML = '<div class="slot-item">Pending Draw</div>';
+          els.slotReel.style.transform = 'translateY(0)';
+          els.winnerMeta.textContent = `Scheduled for ${formatMonthKey(currentMonthKey)} 10th`;
+        }
+      }
+
+      function renderParticipants() {
+        const eligible = getEligibleParticipants();
+        els.poolCount.textContent = `${eligible.length} of ${state.participants.length} eligible`;
+
+        els.nameList.innerHTML = '';
+        if (state.participants.length === 0) {
+          els.emptyListMsg.hidden = false;
+          return;
+        }
+        els.emptyListMsg.hidden = true;
+
+        state.participants.forEach(person => {
+          const li = document.createElement('li');
+          li.className = `name-item${person.drawnMonthKey ? ' drawn' : ''}`;
+
+          const infoDiv = document.createElement('div');
+          infoDiv.className = 'name-info';
+
+          const nameSpan = document.createElement('span');
+          nameSpan.className = 'person-name';
+          nameSpan.textContent = person.name;
+          infoDiv.appendChild(nameSpan);
+
+          const badge = document.createElement('span');
+          if (person.drawnMonthKey) {
+            badge.className = 'badge';
+            badge.textContent = `Already drawn · Drawn in ${formatMonthKey(person.drawnMonthKey)}`;
+          } else {
+            badge.className = 'badge badge-eligible';
+            badge.textContent = 'Eligible';
+          }
+          infoDiv.appendChild(badge);
+
+          li.appendChild(infoDiv);
+          els.nameList.appendChild(li);
+        });
+      }
+
+      function renderHistory() {
+        if (state.history.length === 0) {
+          els.historyEmpty.hidden = false;
+          els.historyWrapper.hidden = true;
+          return;
+        }
+
+        els.historyEmpty.hidden = true;
+        els.historyWrapper.hidden = false;
+        els.historyBody.innerHTML = '';
+
+        const sorted = [...state.history].sort((a, b) => {
+          if (b.monthKey !== a.monthKey) return b.monthKey.localeCompare(a.monthKey);
+          return b.drawnAt.localeCompare(a.drawnAt);
+        });
+
+        sorted.forEach(entry => {
+          const tr = document.createElement('tr');
+
+          const monthTd = document.createElement('td');
+          monthTd.textContent = formatMonthKey(entry.monthKey);
+
+          const nameTd = document.createElement('td');
+          nameTd.style.fontWeight = '600';
+          nameTd.textContent = entry.name;
+
+          const dateTd = document.createElement('td');
+          const d = new Date(entry.drawnAt);
+          dateTd.textContent = isNaN(d.getTime())
+            ? entry.drawnAt
+            : d.toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' });
+
+          tr.appendChild(monthTd);
+          tr.appendChild(nameTd);
+          tr.appendChild(dateTd);
+          els.historyBody.appendChild(tr);
+        });
+      }
+
+      function updateCountdown() {
+        const now = new Date();
+        const target = getNextDrawDate(now);
+        const diffMs = target - now;
+
+        if (diffMs <= 0) {
+          els.countdownDisplay.textContent = 'Draw due today!';
+          return;
+        }
+
+        const totalSec = Math.floor(diffMs / 1000);
+        const days = Math.floor(totalSec / 86400);
+        const hours = Math.floor((totalSec % 86400) / 3600);
+        const minutes = Math.floor((totalSec % 3600) / 60);
+        const seconds = totalSec % 60;
+
+        const targetLabel = target.toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' });
+        els.countdownDisplay.textContent = `Next draw (${targetLabel}): ${days}d ${hours}h ${minutes}m ${seconds}s`;
+      }
+
+      function renderAll(animationConfig = null) {
+        renderWinnerSection(animationConfig);
+        renderParticipants();
+        renderHistory();
+        updateCountdown();
+      }
+
+      function handleStartNewCycle() {
+        if (!confirm('Start a new cycle? This will clear the "Already drawn" marks on all current participants so everyone is eligible again. Draw history will be kept.')) {
+          return;
+        }
+
+        state.participants.forEach(p => {
+          p.drawnMonthKey = null;
+        });
+
+        saveState();
+        renderAll();
+      }
+
+      // --- Initialization ---
+
+      function init() {
+        loadState();
+
+        els.mainDrawBtn.addEventListener('click', handleManualDraw);
+        els.adminDrawNowBtn.addEventListener('click', handleManualDraw);
+        els.newCycleBtn.addEventListener('click', handleStartNewCycle);
+
+        els.adminToggleBtn.addEventListener('click', () => {
+          const isOpen = els.adminPanel.classList.toggle('open');
+          els.adminToggleBtn.setAttribute('aria-expanded', String(isOpen));
+        });
+
+        const drewOnLoad = checkAndRunScheduledDraw();
+        if (!drewOnLoad) {
+          renderAll();
+        }
+
+        setInterval(() => {
+          updateCountdown();
+          checkAndRunScheduledDraw();
+        }, 1000);
+      }
+
+      init();
+    })();
+  </script>
+</body>
+</html>
